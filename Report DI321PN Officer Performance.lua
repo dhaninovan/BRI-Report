@@ -44,6 +44,9 @@ list_summ = {}
 -- 4. Count of current account
 -- 5. Sum of current account balance
 
+list_RM = {}
+-- 0. PN RM PENGELOLA : key
+-- 1. NAMA RM PENGELOLA
 
 OUTPUT_FILE = "Giro_Performance_Officer_Report"
 output_sep = ";"
@@ -148,6 +151,7 @@ for line in io.lines(ReportFileName1) do
 			acc_balance = string.gsub(string.sub(f[10], 1, #f[10]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			acc_officer = f[17]
+			list_RM[f[17]] = f[18]
 			if INCLUDE_IA or (string.sub(acc_no,-3,-3) ~= "9") then
 --				1	CIF
 --				2	Name
@@ -186,6 +190,7 @@ for line in io.lines(ReportFileName2) do
 			acc_name = f[8]
 			acc_balance = string.gsub(string.sub(f[10], 1, #f[10]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
+			list_RM[f[17]] = f[18]
 			if INCLUDE_IA or (string.sub(acc_no,-3,-3) ~= "9") then
 				if list_acc[acc_no] then
 					list_acc[acc_no][3] = acc_balance
@@ -203,9 +208,19 @@ for line in io.lines(ReportFileName2) do
 							list_acc[acc_no][7] = "Penurunan Saldo"
 						end
 					elseif f[17] == "" then
-						list_acc[acc_no][7] = "Patching Giro tanpa PN menjadi PN "..list_acc[acc_no][6]
+						--list_acc[acc_no][7] = "Patching Giro tanpa PN menjadi PN "..list_acc[acc_no][6].."("..list_RM[list_acc[acc_no][6]]..")"
+						if list_acc[acc_no][5] > 0 then
+							list_acc[acc_no][7] = string.format("Patching Giro tanpa PN menjadi PN %s(%s). Saldo meningkat", list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+						elseif list_acc[acc_no][5] < 0 then
+							list_acc[acc_no][7] = string.format("Patching Giro tanpa PN menjadi PN %s(%s). Saldo menurun", list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+						end
 					else
-						list_acc[acc_no][7] = "Patching Giro PN "..f[17].." menjadi PN "..list_acc[acc_no][6]
+						--list_acc[acc_no][7] = "Patching Giro PN "..f[17].." menjadi PN "..list_acc[acc_no][6]
+						if list_acc[acc_no][5] > 0 then
+							list_acc[acc_no][7] = string.format("Patching Giro PN %s(%s) menjadi PN %s(%s). Saldo meningkat", f[17], list_RM[f[17]], list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+						elseif list_acc[acc_no][5] < 0 then
+							list_acc[acc_no][7] = string.format("Patching Giro PN %s(%s) menjadi PN %s(%s). Saldo menurun", f[17], list_RM[f[17]], list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+						end
 					end
 				else
 					acc_officer = f[17]
@@ -409,7 +424,7 @@ fo2:close()
 fo2 = io.open(OUTPUT_FILE..".csv", "w")
 fo2:write('Account No'..output_sep..'CIF'..output_sep..'Account Name'..output_sep..'Base Balance'..output_sep..'Current Balance'..output_sep..'Delta Balance'..output_sep..'PN Officer'..output_sep..'Remark\n')
 for k, v in pairs(sorted_list_acc) do
-	fo2:write(v[1]..output_sep..v[2]..output_sep..'"'..v[3]..'"'..output_sep..v[4]..output_sep..v[5]..output_sep..v[6]..output_sep..v[7]..output_sep..v[8]..'\n')
+	fo2:write(v[1]..output_sep..v[2]..output_sep..'"'..v[3]..'"'..output_sep..v[4]..output_sep..v[5]..output_sep..v[6]..output_sep..v[7]..'/'..list_RM[v[7]]..output_sep..v[8]..'\n')
 end
 fo2:close()
 
