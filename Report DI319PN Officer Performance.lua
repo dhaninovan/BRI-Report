@@ -25,6 +25,9 @@
 
 list_acc = {}
 list_summ = {}
+list_RM = {}
+-- 0. PN RM PENGELOLA : key
+-- 1. NAMA RM PENGELOLA
 OUTPUT_FILE = "Tabungan_Performance_Officer_Report"
 output_sep = ";"
 
@@ -130,16 +133,15 @@ for line in io.lines(ReportFileName1) do
 --			5	Delta Balance
 --			6	Account Officer
 --			7	Remark
-			list_acc[acc_no] = {acc_cif, acc_name, 0, acc_balance, acc_balance, acc_officer, "Tabungan baru"}
-			
-			-- update summary (current balance) for each officer
-			if list_summ[acc_officer] then
-				list_summ[acc_officer][4] = list_summ[acc_officer][4] + 1
-				list_summ[acc_officer][5] = list_summ[acc_officer][5] + acc_balance
-			else
-				list_summ[acc_officer] = {f[18], 0, 0, 1, acc_balance}
+			list_RM[f[17]] = f[18]
+			if f[3] == "IDR " then
+				list_acc[acc_no] = {acc_cif, acc_name, 0, acc_balance, acc_balance, acc_officer, "Tabungan baru"}
 			end
-			--if acc_officer == "00268447" then print(list_summ[acc_officer][4]..":"..f[5]..":"..f[7]..":"..f[11]) end --debug
+			
+			-- update Officer name in summary table from f[18]
+			if list_summ[acc_officer] == nil then
+				list_summ[acc_officer] = {f[18], 0, 0, 0, 0}
+			end
 		end
 	end
 	no = no + 1
@@ -163,6 +165,8 @@ for line in io.lines(ReportFileName2) do
 			acc_name = f[7]
 			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")			
 			acc_balance = tonumber(acc_balance)
+			list_RM[f[17]] = f[18]
+			if f[3] == "IDR " then
 			if list_acc[acc_no] then
 				list_acc[acc_no][3] = acc_balance
 				list_acc[acc_no][5] = list_acc[acc_no][4] - list_acc[acc_no][3]
@@ -172,7 +176,6 @@ for line in io.lines(ReportFileName2) do
 				if f[17] == list_acc[acc_no][6] then
 					-- update remark based on old and new balance
 					if list_acc[acc_no][5] == 0 then
-						--list_acc[acc_no][7] = "Saldo tetap"	-- for reducing output space
 						list_acc[acc_no][7] = ""
 					elseif list_acc[acc_no][5] > 0 then
 						list_acc[acc_no][7] = "Top Up"
@@ -180,23 +183,27 @@ for line in io.lines(ReportFileName2) do
 						list_acc[acc_no][7] = "Penurunan Saldo"
 					end
 				elseif f[17] == "" then
-					list_acc[acc_no][7] = "Patching Tabungan tanpa PN menjadi PN "..list_acc[acc_no][6]
+					if list_acc[acc_no][5] > 0 then
+						list_acc[acc_no][7] = string.format("Patching tabungan tanpa PN menjadi PN %s(%s). Saldo meningkat", list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+					elseif list_acc[acc_no][5] < 0 then
+						list_acc[acc_no][7] = string.format("Patching tabungan tanpa PN menjadi PN %s(%s). Saldo menurun", list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+					end
 				else
-					list_acc[acc_no][7] = "Patching Tabungan PN "..f[17].." menjadi PN "..list_acc[acc_no][6]
+					if list_acc[acc_no][5] > 0 then
+						list_acc[acc_no][7] = string.format("Patching tabungan PN %s(%s) menjadi PN %s(%s). Saldo meningkat", f[17], list_RM[f[17]], list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+					elseif list_acc[acc_no][5] < 0 then
+						list_acc[acc_no][7] = string.format("Patching tabungan PN %s(%s) menjadi PN %s(%s). Saldo menurun", f[17], list_RM[f[17]], list_acc[acc_no][6], list_RM[list_acc[acc_no][6]])
+					end
 				end
 			else
 				acc_officer = f[17]
 				list_acc[acc_no] = {acc_cif, acc_name, acc_balance, 0, -acc_balance, acc_officer, "Penutupan Tabungan"}
 			end
-			
-			-- update summary (baseline balance) for each officer
-			if list_summ[acc_officer] then
-				list_summ[acc_officer][2] = list_summ[acc_officer][2] + 1
-				list_summ[acc_officer][3] = list_summ[acc_officer][3] + acc_balance
-			else
-				list_summ[acc_officer] = {f[18], 1, acc_balance, 0, 0}
 			end
-			--if acc_officer == "00268447" then print(list_summ[acc_officer][2]..":"..f[5]..":"..f[7]..":"..f[11]) end --debug
+			-- update Officer name in summary table from f[18]
+			if list_summ[acc_officer] == nil then
+				list_summ[acc_officer] = {f[18], 0, 0, 0, 0}
+			end
 		end
 	end
 	no = no + 1
@@ -205,7 +212,20 @@ end
 print('Sorting descending')
 sorted_list_acc = {}
 for k, v in pairs(list_acc) do
-	table.insert(sorted_list_acc, {k, v[1], v[2], v[3], v[4], v[5], v[6], v[7]}) 
+	table.insert(sorted_list_acc, {k, v[1], v[2], v[3], v[4], v[5], v[6], v[7]})
+	
+	-- update summary (baseline balance) for each officer
+	acc_officer = v[6]
+	if v[3] > 0 then
+		list_summ[acc_officer][2] = list_summ[acc_officer][2] + 1
+		list_summ[acc_officer][3] = list_summ[acc_officer][3] + v[3]
+	end
+	
+	-- update summary (current balance) for each officer
+	if v[4] > 0 then
+		list_summ[acc_officer][4] = list_summ[acc_officer][4] + 1
+		list_summ[acc_officer][5] = list_summ[acc_officer][5] + v[4]
+	end
 end
 table.sort(sorted_list_acc, function(a,b) return a[6]<b[6] end)
 print("Processing "..tostring(#sorted_list_acc).." rekening")
