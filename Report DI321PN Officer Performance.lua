@@ -152,7 +152,7 @@ for line in io.lines(ReportFileName1) do
 			acc_balance = tonumber(acc_balance)
 			acc_officer = f[17]
 			list_RM[f[17]] = f[18]
-			if INCLUDE_IA or (string.sub(acc_no,-3,-3) ~= "9") then
+			if (INCLUDE_IA or (string.sub(acc_no,-3,-3) ~= "9")) and f[3] == "IDR " then
 --				1	CIF
 --				2	Name
 --				3	Account Baseline Balance
@@ -191,7 +191,7 @@ for line in io.lines(ReportFileName2) do
 			acc_balance = string.gsub(string.sub(f[10], 1, #f[10]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			list_RM[f[17]] = f[18]
-			if INCLUDE_IA or (string.sub(acc_no,-3,-3) ~= "9") then
+			if (INCLUDE_IA or (string.sub(acc_no,-3,-3) ~= "9")) and f[3] == "IDR " then
 				if list_acc[acc_no] then
 					list_acc[acc_no][3] = acc_balance
 					list_acc[acc_no][5] = list_acc[acc_no][4] - list_acc[acc_no][3]
