@@ -64,12 +64,13 @@ function FindFirstSeparator(line)
 end
 
 res, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
+Sumber Data: %m\n
 Report Posisi Awal: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
 Report Posisi Akhir: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
 Output Separator: %l|,|;|\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",0,1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",0,1)
 
 if ReportFileName1 == "" or ReportFileName2 == "" then
 	print("Please select two reports to be compared")

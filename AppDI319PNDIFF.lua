@@ -54,13 +54,14 @@ function FindFirstSeparator(line)
 	return sep
 end
 
-res, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report DI319 dalam Format CSV (Sumber: DWH)", nil, [=[
+res, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report DI319 PN dalam Format CSV (Sumber: DWH)", nil, [=[
+Sumber Data: %m\n
 Report Posisi Awal: %f[OPEN|*.csv;*.txt;*.gz|CURRENT|NO|NO]\n
 Report Posisi Akhir: %f[OPEN|*.csv;*.txt;*.gz|CURRENT|NO|NO]\n
 Output Separator: %l|,|;|\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"E:\\Projects\\LUA Script\\BRI Report\\Otista\\DI319 PN PENGELOLAH V2 01 JANUARI 2020.csv","E:\\Projects\\LUA Script\\BRI Report\\Otista\\DI319 PN PENGELOLAH V2 31 DESEMBER 2020.csv",0,1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 DI319 PN PENGELOLAH V2.csv","C:\\Lua\\data\\20210113 DI319 PN PENGELOLAH V2.csv",0,1)
 
 if ReportFileName1 == "" or ReportFileName2 == "" then
 	print("Please select two reports to be compared")
@@ -179,7 +180,7 @@ end
 ii = 0
 fo = io.open(OUTPUT_FILE..".csv", "w")
 fo2 = io.open(OUTPUT_FILE..".htm", "w")
-fo:write('No Rek'..output_sep..'CIF'..output_sep..'Nama'..output_sep..'Posisi Awal'..output_sep..'Posisi Akhir'..output_sep..'Delta\n')
+fo:write('No Rek'..output_sep..'CIF'..output_sep..'Nama'..output_sep..'Posisi Awal'..output_sep..'Posisi Akhir'..output_sep..'Delta'..output_sep..'Officer\n')
 fo2:write([=[
 <!DOCTYPE html>
 <html>
