@@ -24,25 +24,37 @@ function format_account(s)
     return s
 end
 
+function ReadRegistry(key, value)
+	local fi, data, content, data_type
+	
+	fi = io.popen(string.format('reg QUERY "%s" /v %s', key, value))
+	data = nil
+	if fi then
+		content = fi:read("*a")
+		data_type, data = content:match(value..'%s+(%S+)%s+(.+)\n\n')
+		fi:close()
+	end
+
+	return data_type, data
+end
+
 function format_number(v)
 	local s
-	local unary
+	local unary, sep_thousand
 	
 	if v < 0 then
-		--s = string.format("%d", math.floor(-v))
 		s = tostring(-v)
 		unary = "-"
 	else
-		--s = string.format("%d", math.floor(v))
 		s = tostring(v)
 		unary = ""
 	end
     
     local pos = string.len(s) % 3
-
+	data_type, thousand_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sThousand')
+	if thousand_sep == nil then thousand_sep = '.' end
     if pos == 0 then pos = 3 end
-    return unary..string.sub(s, 1, pos).. string.gsub(string.sub(s, pos+1), "(...)", ".%1")
---	return v
+    return unary..string.sub(s, 1, pos).. string.gsub(string.sub(s, pos+1), "(...)", thousand_sep.."%1")
 end
 
 function FindFirstSeparator(line)
@@ -63,14 +75,28 @@ function FindFirstSeparator(line)
 	return sep
 end
 
-res, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
+-- res, dummy, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
+-- Sumber Data: %m\n
+-- Report Posisi Awal: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
+-- Report Posisi Akhir: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
+-- Output Separator: %l|,|;|\n
+-- Limit Result: %l|10|20|30|50|100|\n
+-- ]=]
+-- ,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",0,1)
+
+res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
 Sumber Data: %m\n
-Report Posisi Awal: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
-Report Posisi Akhir: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
-Output Separator: %l|,|;|\n
+Report Posisi Awal: %f[OPEN|*CI324*.csv;*CI324*.gz|CURRENT|NO|NO]\n
+Report Posisi Akhir: %f[OPEN|*CI324*.csv;*CI324*.gz|CURRENT|NO|NO]\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",0,1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",1)
+
+data_type, output_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sList')
+data_type, decimal_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sDecimal')
+if output_sep == decimal_sep then output_sep =';' end
+if output_sep == nil then output_sep = ',' end
+
 
 if ReportFileName1 == "" or ReportFileName2 == "" then
 	print("Please select two reports to be compared")
@@ -79,15 +105,22 @@ if ReportFileName1 == "" or ReportFileName2 == "" then
 end
 
 -- convert Unicode to ANSI
+if ReportFileName1:match('%.gz$') == nil then
 print('Converting '..ReportFileName1..' to ANSI encoding')
 os.execute('type "'..ReportFileName1..'" > '..'tmp.csv')
 os.remove(ReportFileName1)
 os.rename('tmp.csv', ReportFileName1)
+f_lines = io.lines
+else
+f_lines = gzio.lines
+end
 
+if ReportFileName1:match('%.gz$') == nil then
 print('Converting '..ReportFileName2..' to ANSI encoding')
 os.execute('type "'..ReportFileName2..'" > '..'tmp.csv')
 os.remove(ReportFileName2)
 os.rename('tmp.csv', ReportFileName2)
+end
 
 -- Load first data into table list_acc
 t1 = os.clock()
@@ -95,7 +128,7 @@ print('Loading data from '..ReportFileName1)
 no = 1
 sep = ','
 posisi_report1 = ''
-for line in io.lines(ReportFileName1) do
+for line in f_lines(ReportFileName1) do
 	-- process header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
@@ -122,6 +155,8 @@ print('Loading data from '..ReportFileName2)
 no = 1
 sep = ','
 posisi_report2 = ''
+fo = io.open(OUTPUT_FILE.."_NEW.csv", "w")
+fo:write('Rekening'..output_sep..'Tipe'..output_sep..'Nama'..output_sep..'Tanggal Buka'..output_sep..'Jatuh Tempo'..output_sep..'Rate'..output_sep..'Tenor'..output_sep..'Rollover'..output_sep..'Currency'..output_sep..'Pokok'..output_sep..'PN_Pengelola\n')
 for line in io.lines(ReportFileName2) do
 	-- only process line begin with number, skipping header
 	if no == 1 then
@@ -142,11 +177,26 @@ for line in io.lines(ReportFileName2) do
 				list_acc[acc_no][6] = list_acc[acc_no][5] - list_acc[acc_no][4]
 			else
 				list_acc[acc_no] = {acc_type_tenor, acc_maturity, acc_name, 0, acc_balance, acc_balance, acc_officer}
+				issuedt = csv.parse(f[11],'/')
+				matdt = csv.parse(f[12],'/')
+				fo:write(string.format('%s%s%s%s%s%s%s/%s/%s%s%s/%s/%s%s%s%s%s%s%s%s%s%s%s\n', 
+					format_account(acc_no), output_sep,
+					f[5], output_sep,
+					acc_name, output_sep,
+					issuedt[1], issuedt[2], issuedt[3], output_sep,
+					matdt[1], matdt[2], matdt[3], output_sep, 
+					f[13]:gsub('%.',decimal_sep), output_sep,
+					f[14], output_sep,
+					f[15], output_sep,
+					f[3], output_sep,
+					format_number(acc_balance), output_sep,
+					acc_officer))
 			end
 		end
 	end
 	no = no + 1
 end
+fo:close()
 
 print('Sorting descending')
 sorted_list_acc = {}
@@ -356,6 +406,7 @@ fo2:close()
 fo:close()
 print('=== Done in '..(os.clock()-t1)..' ===')
 os.execute(OUTPUT_FILE..".htm")
---os.execute("pause")
 
-
+if iup.Alarm("Open List of New Created Account", "Buka file daftar rekening baru yang dibuat \ndalam periode "..posisi_report1.." sampai "..posisi_report2.." ? " ,"Ya" ,"Tidak") == 1 then
+	os.execute(OUTPUT_FILE.."_NEW.csv")
+end

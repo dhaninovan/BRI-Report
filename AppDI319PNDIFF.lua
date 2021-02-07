@@ -2,6 +2,13 @@
 -- Interpreter : (Novan's Modified)lua.exe
 -- 7:57 PM Thursday, April 25, 2013 Raha City
 
+--[[
+TODO:
+1. Tambahkan support untuk file input multi PN (Sesuaikan Field PN Pengelola)
+2. Tambahkan field untuk Date Opened in Output New Account dan atur format sesuai dengan Indonesia [done]
+3. Support multi currency
+]]--
+
 list_acc = {}
 OUTPUT_FILE = "DI319PNDIFF"
 f_lines = nil
@@ -15,25 +22,37 @@ function format_account(s)
     return s
 end
 
+function ReadRegistry(key, value)
+	local fi, data, content, data_type
+	
+	fi = io.popen(string.format('reg QUERY "%s" /v %s', key, value))
+	data = nil
+	if fi then
+		content = fi:read("*a")
+		data_type, data = content:match(value..'%s+(%S+)%s+(.+)\n\n')
+		fi:close()
+	end
+
+	return data_type, data
+end
+
 function format_number(v)
 	local s
-	local unary
+	local unary, sep_thousand
 	
 	if v < 0 then
-		--s = string.format("%d", math.floor(-v))
 		s = tostring(-v)
 		unary = "-"
 	else
-		--s = string.format("%d", math.floor(v))
 		s = tostring(v)
 		unary = ""
 	end
     
     local pos = string.len(s) % 3
-
+	data_type, thousand_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sThousand')
+	if thousand_sep == nil then thousand_sep = '.' end
     if pos == 0 then pos = 3 end
-    return unary..string.sub(s, 1, pos).. string.gsub(string.sub(s, pos+1), "(...)", ".%1")
---	return v
+    return unary..string.sub(s, 1, pos).. string.gsub(string.sub(s, pos+1), "(...)", thousand_sep.."%1")
 end
 
 function FindFirstSeparator(line)
@@ -54,14 +73,18 @@ function FindFirstSeparator(line)
 	return sep
 end
 
-res, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report DI319 PN dalam Format CSV (Sumber: DWH)", nil, [=[
+res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report DI319 PN dalam Format CSV (Sumber: DWH)", nil, [=[
 Sumber Data: %m\n
-Report Posisi Awal: %f[OPEN|*.csv;*.txt;*.gz|CURRENT|NO|NO]\n
-Report Posisi Akhir: %f[OPEN|*.csv;*.txt;*.gz|CURRENT|NO|NO]\n
-Output Separator: %l|,|;|\n
+Report Posisi Awal: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
+Report Posisi Akhir: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 DI319 PN PENGELOLAH V2.csv","C:\\Lua\\data\\20210113 DI319 PN PENGELOLAH V2.csv",0,1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 DI319 PN PENGELOLAH V2.csv","C:\\Lua\\data\\20210113 DI319 PN PENGELOLAH V2.csv",1)
+
+data_type, output_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sList')
+data_type, decimal_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sDecimal')
+if output_sep == decimal_sep then output_sep =';' end
+if output_sep == nil then output_sep = ',' end
 
 if ReportFileName1 == "" or ReportFileName2 == "" then
 	print("Please select two reports to be compared")
@@ -127,6 +150,8 @@ print('Loading data from '..ReportFileName2)
 no = 1
 sep = ','
 posisi_report2 = ''
+fo = io.open(OUTPUT_FILE.."_NEW.csv", "w")
+fo:write('Rekening'..output_sep..'Tipe'..output_sep..'Nama'..output_sep..'Tanggal Buka'..output_sep..'Saldo'..output_sep..'PN_Pengelola\n')
 for line in f_lines(ReportFileName2) do
 	-- only process line begin with number, skipping header
 	if no == 1 then
@@ -138,7 +163,7 @@ for line in f_lines(ReportFileName2) do
 			acc_no = f[5]
 			acc_cif = f[6]
 			acc_name = f[7]
-			acc_officer = f[17]..'/'..f[18]
+			acc_officer = f[17]..'-'..f[18]
 			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			if list_acc[acc_no] then
@@ -146,11 +171,20 @@ for line in f_lines(ReportFileName2) do
 				list_acc[acc_no][5] = list_acc[acc_no][4] - list_acc[acc_no][3]
 			else
 				list_acc[acc_no] = {acc_cif, acc_name, 0, acc_balance, acc_balance, acc_officer}
+				dd = csv.parse(f[10],'/')
+				fo:write(string.format('%s%s%s%s%s%s%s/%s/%s%s%s%s%s\n', 
+					format_account(acc_no), output_sep,
+					f[16], output_sep,
+					acc_name, output_sep,
+					dd[2], dd[1], dd[3], output_sep,
+					format_number(acc_balance), output_sep,
+					acc_officer))
 			end
 		end
 	end
 	no = no + 1
 end
+fo:close()
 
 print('Sorting descending')
 sorted_list_acc = {}
@@ -358,6 +392,10 @@ fo2:close()
 fo:close()
 print('=== Done in '..(os.clock()-t1)..' ===')
 os.execute(OUTPUT_FILE..".htm")
+
+if iup.Alarm("Open List of New Created Account", "Buka file daftar rekening baru yang dibuat \ndalam periode "..posisi_report1.." sampai "..posisi_report2.." ? " ,"Ya" ,"Tidak") == 1 then
+	os.execute(OUTPUT_FILE.."_NEW.csv")
+end
 --os.execute("pause")
 
 
