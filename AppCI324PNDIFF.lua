@@ -179,7 +179,7 @@ for line in io.lines(ReportFileName2) do
 				list_acc[acc_no] = {acc_type_tenor, acc_maturity, acc_name, 0, acc_balance, acc_balance, acc_officer}
 				issuedt = csv.parse(f[11],'/')
 				matdt = csv.parse(f[12],'/')
-				fo:write(string.format('%s%s%s%s%s%s%s/%s/%s%s%s/%s/%s%s%s%s%s%s%s%s%s%s%s\n', 
+				fo:write(string.format('%s%s%s%s"%s"%s%s/%s/%s%s%s/%s/%s%s"%s"%s%s%s%s%s%s%s"%s"%s%s\n', 
 					format_account(acc_no), output_sep,
 					f[5], output_sep,
 					acc_name, output_sep,

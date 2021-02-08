@@ -70,7 +70,7 @@ function format_number(v)
 	data_type, thousand_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sThousand')
 	if thousand_sep == nil then thousand_sep = '.' end
     if pos == 0 then pos = 3 end
-    return unary..string.sub(s, 1, pos).. string.gsub(string.sub(s, pos+1), "(...)", thousand_sep.."%1")
+    return unary..string.sub(s, 1, pos).. string.gsub(string.sub(s, pos+1), '(...)', thousand_sep..'%1')
 end
 
 function FindFirstSeparator(line)
@@ -185,7 +185,7 @@ for line in f_lines(ReportFileName2) do
 					list_acc[acc_no][6] = acc_officer
 				else
 					list_acc[acc_no] = {acc_cif, acc_name, acc_balance, 0, -acc_balance, acc_officer}
-					fo:write(string.format('%s%s%s%s%s%s%s\n', 
+					fo:write(string.format('%s%s"%s"%s"%s"%s%s\n', 
 						format_account(acc_no), output_sep,
 						acc_name, output_sep,
 						format_number(acc_balance), output_sep,

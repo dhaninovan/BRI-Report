@@ -172,7 +172,7 @@ for line in f_lines(ReportFileName2) do
 			else
 				list_acc[acc_no] = {acc_cif, acc_name, 0, acc_balance, acc_balance, acc_officer}
 				dd = csv.parse(f[10],'/')
-				fo:write(string.format('%s%s%s%s%s%s%s/%s/%s%s%s%s%s\n', 
+				fo:write(string.format('%s%s%s%s"%s"%s%s/%s/%s%s"%s"%s%s\n', 
 					format_account(acc_no), output_sep,
 					f[16], output_sep,
 					acc_name, output_sep,
