@@ -7,6 +7,18 @@ TODO:
 1. Tambahkan support untuk file input multi PN (Sesuaikan Field PN Pengelola)
 2. Tambahkan field untuk Date Opened in Output New Account dan atur format sesuai dengan Indonesia [done]
 3. Support multi currency
+
+New Field in DI319 Multi PN:
+25. PN_Customer_Service	
+26. PN_RM_Dana	
+27. PN_RM_Pinjaman	
+28. PN_RM_Merchant	
+29. PN_Relationship_Officer	
+30. PN_Sales_Person	
+31. PN_PAB	
+32. PN_RM_Referral	
+33. JUMLAH_PN
+
 ]]--
 
 list_acc = {}
@@ -73,13 +85,27 @@ function FindFirstSeparator(line)
 	return sep
 end
 
-res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report DI319 PN dalam Format CSV (Sumber: DWH)", nil, [=[
+function Rekap_Officer(cs, rm_dana, rm_kredit, rm_merchant, rm_ro, rm_sp, rm_pab, rm_referal)
+	local res = {}
+	
+	if #cs ~= 0 then res[#res+1] = "CS = "..cs end
+	if #rm_dana ~= 0 then res[#res+1] = "RM Dana = "..rm_dana end
+	if #rm_kredit ~= 0 then res[#res+1] = "RM Kredit = "..rm_kredit end
+	if #rm_merchant ~= 0 then res[#res+1] = "RM Merchant = "..rm_merchant end
+	if #rm_ro ~= 0 then res[#res+1] = "RO = "..rm_ro end
+	if #rm_sp ~= 0 then res[#res+1] = "SP = "..rm_sp end
+	if #rm_pab ~= 0 then res[#res+1] = "PAB = "..rm_pab end
+	if #rm_referal ~= 0 then res[#res+1] = "Referal = "..rm_referal end
+	return table.concat(res,", ")
+end
+
+res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report DI319 MULTI PN dalam Format CSV (Sumber: DWH)", nil, [=[
 Sumber Data: %m\n
 Report Posisi Awal: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
 Report Posisi Akhir: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 DI319 PN PENGELOLAH V2.csv","C:\\Lua\\data\\20210113 DI319 PN PENGELOLAH V2.csv",1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - MULTI PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 DI319 PN PENGELOLAH V2.csv","C:\\Lua\\data\\20210113 DI319 PN PENGELOLAH V2.csv",1)
 
 data_type, output_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sList')
 data_type, decimal_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sDecimal')
@@ -128,7 +154,7 @@ for line in f_lines(ReportFileName1) do
 			acc_no = f[5]
 			acc_cif = f[6]
 			acc_name = f[7]
-			acc_officer = f[17]..'/'..f[18]
+			acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
 			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
 			if (acc_balance ~= nil) then 
 				acc_balance = tonumber(acc_balance)
@@ -163,12 +189,13 @@ for line in f_lines(ReportFileName2) do
 			acc_no = f[5]
 			acc_cif = f[6]
 			acc_name = f[7]
-			acc_officer = f[17]..'-'..f[18]
+			acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
 			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			if list_acc[acc_no] then
 				list_acc[acc_no][4] = acc_balance
 				list_acc[acc_no][5] = list_acc[acc_no][4] - list_acc[acc_no][3]
+				list_acc[acc_no][6] = acc_officer
 			else
 				list_acc[acc_no] = {acc_cif, acc_name, 0, acc_balance, acc_balance, acc_officer}
 				dd = csv.parse(f[10],'/')
