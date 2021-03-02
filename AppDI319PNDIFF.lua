@@ -21,9 +21,12 @@ New Field in DI319 Multi PN:
 
 ]]--
 
-list_acc = {}
-OUTPUT_FILE = "DI319PNDIFF"
-f_lines = nil
+local list_acc = {}
+local OUTPUT_FILE = "DI319PNDIFF"
+local f_lines1 = nil
+local f_lines2 = nil
+local HEADER_DI319_MULTIPN = "textbox16,textbox8,textbox14,textbox22,textbox15,textbox4,textbox38,textbox6,DLT,textbox2,BALANCE,AVAILBALANCE,INTCREDIT,ACCRUEINT,AVRGBALANCE,textbox11,textbox18,textbox23,KECAMATAN_T_TINGGAL,KELURAHAN_T_TINGGAL,KODEPOS_T_TINGGAL,KECAMATAN_T_USAHA,KELURAHAN_T_USAHA,KODEPOS_T_USAHA,PN_Customer_Service,PN_RM_Dana,PN_RM_Pinjaman,PN_RM_Merchant,PN_Relationship_Officer,PN_Sales_Person,PN_PAB,PN_RM_Referral,JUMLAH_PN"
+local HEADER_DI319_PN = 	 "textbox16,textbox8,textbox14,textbox22,textbox15,textbox4,textbox38,textbox6,DLT,textbox2,BALANCE,AVAILBALANCE,INTCREDIT,ACCRUEINT,AVRGBALANCE,textbox11,textbox18,textbox23,KECAMATAN_T_TINGGAL,KELURAHAN_T_TINGGAL,KODEPOS_T_TINGGAL,KECAMATAN_T_USAHA,KELURAHAN_T_USAHA,KODEPOS_T_USAHA"
 
 function format_account(s)
     local rek_len = string.len(s)
@@ -99,6 +102,22 @@ function Rekap_Officer(cs, rm_dana, rm_kredit, rm_merchant, rm_ro, rm_sp, rm_pab
 	return table.concat(res,", ")
 end
 
+function Report_Type(header)
+	header = header:gsub(string.char(0x0D),'')
+	header = header:gsub(string.char(0x0A),'')
+	if header == string.char(0xEF, 0xBB, 0xBF)..HEADER_DI319_MULTIPN then
+		return "DI319MULTIPN"
+	elseif header == string.char(0xEF, 0xBB, 0xBF)..HEADER_DI319_PN then
+		return "DI319PN"
+	elseif header == HEADER_DI319_MULTIPN then 
+		return "DI319MULTIPN"
+	elseif header == HEADER_DI319_PN then
+		return "DI319PN"
+	else
+		return nil
+	end
+end
+
 res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report DI319 MULTI PN dalam Format CSV (Sumber: DWH)", nil, [=[
 Sumber Data: %m\n
 Report Posisi Awal: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
@@ -124,16 +143,19 @@ print('Converting '..ReportFileName1..' to ANSI encoding')
 os.execute('type "'..ReportFileName1..'" > '..'tmp.csv')
 os.remove(ReportFileName1)
 os.rename('tmp.csv', ReportFileName1)
-f_lines = io.lines
+f_lines1 = io.lines
 else
-f_lines = gzio.lines
+f_lines1 = gzio.lines
 end
 
-if ReportFileName1:match('%.gz$') == nil then
+if ReportFileName2:match('%.gz$') == nil then
 print('Converting '..ReportFileName2..' to ANSI encoding')
 os.execute('type "'..ReportFileName2..'" > '..'tmp.csv')
 os.remove(ReportFileName2)
 os.rename('tmp.csv', ReportFileName2)
+f_lines2 = io.lines
+else
+f_lines2 = gzio.lines
 end
 
 -- Load first data into table list_acc
@@ -142,10 +164,17 @@ print('Loading data from '..ReportFileName1)
 no = 1
 sep = ','
 posisi_report1 = ''
-for line in f_lines(ReportFileName1) do
+report1_type = ''
+report2_type = ''
+for line in f_lines1(ReportFileName1) do
 	-- process header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
+		report1_type = Report_Type(line)
+		if report1_type ~= "DI319PN" and report1_type ~= "DI319MULTIPN" then
+			iup.Message("Error","Report [Awal] yang dipilih bukan Report \"DI319\" PN atau \"DI319 MULTI PN\" dalam format CSV.\nSilahkan download ulang dari BRISIM atau \npilih kembali report yang sesuai.")
+			return -1
+		end
 	else
 		-- process data
 		f = csv.parse(line, sep)
@@ -154,7 +183,11 @@ for line in f_lines(ReportFileName1) do
 			acc_no = f[5]
 			acc_cif = f[6]
 			acc_name = f[7]
-			acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
+			if report1_type == "DI319MULTIPN" then
+				acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
+			else
+				acc_officer = f[17]..'-'..f[18]
+			end
 			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
 			if (acc_balance ~= nil) then 
 				acc_balance = tonumber(acc_balance)
@@ -178,10 +211,15 @@ sep = ','
 posisi_report2 = ''
 fo = io.open(OUTPUT_FILE.."_NEW.csv", "w")
 fo:write('Rekening'..output_sep..'Tipe'..output_sep..'Nama'..output_sep..'Tanggal Buka'..output_sep..'Saldo'..output_sep..'PN_Pengelola\n')
-for line in f_lines(ReportFileName2) do
+for line in f_lines2(ReportFileName2) do
 	-- only process line begin with number, skipping header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
+		report2_type = Report_Type(line)
+		if report2_type ~= "DI319PN" and report2_type ~= "DI319MULTIPN" then
+			iup.Message("Error","Report [Akhir] yang dipilih bukan Report \"DI319\" PN atau \"DI319 MULTI PN\" dalam format CSV.\\nSilahkan download ulang dari BRISIM atau \\npilih kembali report yang sesuai.")
+			return -1
+		end
 	else
 		f = csv.parse(line, sep)
 		if f[1] ~= "" then
@@ -189,7 +227,11 @@ for line in f_lines(ReportFileName2) do
 			acc_no = f[5]
 			acc_cif = f[6]
 			acc_name = f[7]
-			acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
+			if report2_type == "DI319MULTIPN" then
+				acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
+			else
+				acc_officer = f[17]..'-'..f[18]
+			end
 			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			if list_acc[acc_no] then
