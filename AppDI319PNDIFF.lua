@@ -124,7 +124,7 @@ Report Posisi Awal: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
 Report Posisi Akhir: %f[OPEN|*DI319*.csv;*DI319*.gz|CURRENT|NO|NO]\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - MULTI PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 DI319 PN PENGELOLAH V2.csv","C:\\Lua\\data\\20210113 DI319 PN PENGELOLAH V2.csv",1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih DI319 - MULTI PN SAVINGS ACCOUNT MONTHLY TRIAL BALANCE - ACTIVE (1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20210131 DI319 MULTI PN.csv.gz","C:\\Lua\\data\\20210225 DI319 MULTI PN.csv.gz",1)
 
 data_type, output_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sList')
 data_type, decimal_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sDecimal')

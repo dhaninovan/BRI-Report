@@ -59,16 +59,18 @@ Section "MainSection" SEC01
   CreateShortCut "$DESKTOP\CI324.lnk" "$INSTDIR\lua.exe" "$INSTDIR\script\AppCI324PNDIFF.lua"
   CreateShortCut "$SMPROGRAMS\BRI Reporting Tool\CI324.lnk" "$INSTDIR\lua.exe" "$INSTDIR\script\AppCI324PNDIFF.lua"
   CreateShortCut "$SMPROGRAMS\BRI Reporting Tool\Uninstall.lnk" "$INSTDIR\uninst.exe"
+  File "C:\Lua\script\gzip.lua"  
+  WriteRegStr HKCR "*\shell\Compress with gzip\command" "" '"C:\Lua\lua.exe" "C:\Lua\script\gzip.lua" "%1"'
 SectionEnd
 
 Section "SampleReport" SEC02
   SetOutPath "$INSTDIR\data"
-  File "Otista\20201231 DI319 PN PENGELOLAH V2.csv"
-  File "Otista\20201231 DI321 PN PENGELOLAH.csv"
-  File "Otista\20210113 DI319 PN PENGELOLAH V2.csv"
-  File "Otista\20210130 DI321 PN PENGELOLAH.csv"
-  File "Otista\20201231 CI324Modif.csv"
-  File "Otista\20210131 CI324Modif.csv"
+  File "data\20201231 CI324Modif.csv.gz"
+  File "data\20201231 DI321 PN PENGELOLAH.csv.gz"
+  File "data\20210130 DI321 PN PENGELOLAH.csv.gz"
+  File "data\20210131 CI324Modif.csv.gz"
+  File "data\20210131 DI319 MULTI PN.csv.gz"
+  File "data\20210225 DI319 MULTI PN.csv.gz"
 SectionEnd
 
 ;Section -AdditionalIcons
@@ -100,18 +102,18 @@ FunctionEnd
 
 Section Uninstall
   Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\data\20210130 DI321 PN PENGELOLAH.csv"
-  Delete "$INSTDIR\data\20210113 DI319 PN PENGELOLAH V2.csv"
-  Delete "$INSTDIR\data\20201231 DI321 PN PENGELOLAH.csv"
-  Delete "$INSTDIR\data\20201231 DI319 PN PENGELOLAH V2.csv"
-  Delete "$INSTDIR\data\20201231 CI324Modif.csv"
-  Delete "$INSTDIR\data\20210131 CI324Modif.csv"
+  
+  Delete "$INSTDIR\data\20201231 CI324Modif.csv.gz"
+  Delete "$INSTDIR\data\20201231 DI321 PN PENGELOLAH.csv.gz"
+  Delete "$INSTDIR\data\20210130 DI321 PN PENGELOLAH.csv.gz"
+  Delete "$INSTDIR\data\20210131 CI324Modif.csv.gz"
+  Delete "$INSTDIR\data\20210131 DI319 MULTI PN.csv.gz"
+  Delete "$INSTDIR\data\20210225 DI319 MULTI PN.csv.gz"
+  
   Delete "$INSTDIR\data\*.csv"
   Delete "$INSTDIR\data\*.htm"
-  Delete "$INSTDIR\script\AppCI324PNDIFF.lua"
-  Delete "$INSTDIR\script\AppDI319PNDIFF.lua"
-  Delete "$INSTDIR\script\AppDI321PNDIFF.lua"
-  Delete "$INSTDIR\script\AppDI321PNDIFF.lua"
+  Delete "$INSTDIR\data\*.gz"
+  Delete "$INSTDIR\script\*.lua"
   Delete "$INSTDIR\script\*.csv"
   Delete "$INSTDIR\script\*.htm"
   Delete "$INSTDIR\lua.exe"
@@ -134,5 +136,6 @@ Section Uninstall
 
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+  DeleteRegKey HKCR "*\shell\Compress with gzip"
   SetAutoClose true
 SectionEnd

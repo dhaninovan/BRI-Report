@@ -75,22 +75,13 @@ function FindFirstSeparator(line)
 	return sep
 end
 
--- res, dummy, ReportFileName1, ReportFileName2, output_sep, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
--- Sumber Data: %m\n
--- Report Posisi Awal: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
--- Report Posisi Akhir: %f[OPEN|*.csv;*.txt|CURRENT|NO|NO]\n
--- Output Separator: %l|,|;|\n
--- Limit Result: %l|10|20|30|50|100|\n
--- ]=]
--- ,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",0,1)
-
 res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
 Sumber Data: %m\n
 Report Posisi Awal: %f[OPEN|*CI324*.csv;*CI324*.gz|CURRENT|NO|NO]\n
 Report Posisi Akhir: %f[OPEN|*CI324*.csv;*CI324*.gz|CURRENT|NO|NO]\n
 Limit Result: %l|10|20|30|50|100|\n
 ]=]
-,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv","C:\\Lua\\data\\20210131 CI324Modif.csv",1)
+,"1. Buka Aplikasi BRISIM (https://brisim.bri.co.id)\n2. Pilih: DWH Reports\n3. Pilih: Critical Report\n4. Pilih: Table\n5. Pilih CI324(PN) - FDS MONTHLY TRIAL BALANCE BY PRODUCT TYPE(1 ROW)\n6. Download dan Save dalam format CSV", "C:\\Lua\\data\\20201231 CI324Modif.csv.gz","C:\\Lua\\data\\20210131 CI324Modif.csv.gz",1)
 
 data_type, output_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sList')
 data_type, decimal_sep = ReadRegistry('HKCU\\Control Panel\\International', 'sDecimal')
@@ -110,9 +101,9 @@ print('Converting '..ReportFileName1..' to ANSI encoding')
 os.execute('type "'..ReportFileName1..'" > '..'tmp.csv')
 os.remove(ReportFileName1)
 os.rename('tmp.csv', ReportFileName1)
-f_lines = io.lines
+f_lines1 = io.lines
 else
-f_lines = gzio.lines
+f_lines1 = gzio.lines
 end
 
 if ReportFileName1:match('%.gz$') == nil then
@@ -120,6 +111,9 @@ print('Converting '..ReportFileName2..' to ANSI encoding')
 os.execute('type "'..ReportFileName2..'" > '..'tmp.csv')
 os.remove(ReportFileName2)
 os.rename('tmp.csv', ReportFileName2)
+f_lines2 = io.lines
+else
+f_lines2 = gzio.lines
 end
 
 -- Load first data into table list_acc
@@ -128,7 +122,7 @@ print('Loading data from '..ReportFileName1)
 no = 1
 sep = ','
 posisi_report1 = ''
-for line in f_lines(ReportFileName1) do
+for line in f_lines1(ReportFileName1) do
 	-- process header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
@@ -157,7 +151,7 @@ sep = ','
 posisi_report2 = ''
 fo = io.open(OUTPUT_FILE.."_NEW.csv", "w")
 fo:write('Rekening'..output_sep..'Tipe'..output_sep..'Nama'..output_sep..'Tanggal Buka'..output_sep..'Jatuh Tempo'..output_sep..'Rate'..output_sep..'Tenor'..output_sep..'Rollover'..output_sep..'Currency'..output_sep..'Pokok'..output_sep..'PN_Pengelola\n')
-for line in io.lines(ReportFileName2) do
+for line in f_lines2(ReportFileName2) do
 	-- only process line begin with number, skipping header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
