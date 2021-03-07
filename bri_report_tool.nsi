@@ -59,7 +59,7 @@ Section "MainSection" SEC01
   CreateShortCut "$DESKTOP\CI324.lnk" "$INSTDIR\lua.exe" "$INSTDIR\script\AppCI324PNDIFF.lua"
   CreateShortCut "$SMPROGRAMS\BRI Reporting Tool\CI324.lnk" "$INSTDIR\lua.exe" "$INSTDIR\script\AppCI324PNDIFF.lua"
   CreateShortCut "$SMPROGRAMS\BRI Reporting Tool\Uninstall.lnk" "$INSTDIR\uninst.exe"
-  File "C:\Lua\script\gzip.lua"  
+  File "gzip.lua"
   WriteRegStr HKCR "*\shell\Compress with gzip\command" "" '"C:\Lua\lua.exe" "C:\Lua\script\gzip.lua" "%1"'
 SectionEnd
 

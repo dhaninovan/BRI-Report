@@ -35,4 +35,4 @@ until buf == nil
 gzFile:close()
 fi:close()
 
-iup.Message("Info", "Successfully compress "..filename.." into "..filename..".gz in "..(os.clock()-t1).."\nFile size reduced: "..format_number(os.getfilesize(filename)-os.getfilesize(filename..'.gz')..' bytes'))
+iup.Message("Info", "Successfully compress "..filename.." into \n"..filename..".gz in "..(os.clock()-t1).."\nFile size reduced: "..format_number(os.getfilesize(filename)-os.getfilesize(filename..'.gz')..' bytes'))
