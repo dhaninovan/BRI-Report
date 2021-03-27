@@ -12,8 +12,10 @@
 -- 7. 			Delta
 -- 8. 			Officer c17 c18
 			
-list_acc = {}
-OUTPUT_FILE = "CI324PNDIFF"
+local list_acc = {}
+local OUTPUT_FILE = "CI324PNDIFF"
+local HEADER_CI324 = "periode,branch,curr,currdesc,prodtype,acctno,serialno,princpamt,sname,wdrint,issuedt,matdt,rate,intdisp,textbox22"
+local HEADER_CI324_PN = 	 "periode,branch,curr,currdesc,prodtype,acctno,serialno,princpamt,sname,wdrint,issuedt,matdt,rate,intdisp,textbox22,CFAREF,SNAME_FO"
 
 function format_account(s)
     local rek_len = string.len(s)
@@ -75,6 +77,22 @@ function FindFirstSeparator(line)
 	return sep
 end
 
+function Report_Type(header)
+	header = header:gsub(string.char(0x0D),'')
+	header = header:gsub(string.char(0x0A),'')
+	if header == string.char(0xEF, 0xBB, 0xBF)..HEADER_CI324 then
+		return "CI324"
+	elseif header == string.char(0xEF, 0xBB, 0xBF)..HEADER_CI324_PN then
+		return "CI324PN"
+	elseif header == HEADER_CI324 then 
+		return "CI324"
+	elseif header == HEADER_CI324_PN then
+		return "CI324PN"
+	else
+		return nil
+	end
+end
+
 res, dummy, ReportFileName1, ReportFileName2, limit_res = iup.GetParam("Pilih Report CI324 PN dalam Format CSV (Sumber: DWH)", nil, [=[
 Sumber Data: %m\n
 Report Posisi Awal: %f[OPEN|*CI324*.csv;*CI324*.gz|CURRENT|NO|NO]\n
@@ -122,10 +140,17 @@ print('Loading data from '..ReportFileName1)
 no = 1
 sep = ','
 posisi_report1 = ''
+report1_type = ''
+report2_type = ''
 for line in f_lines1(ReportFileName1) do
 	-- process header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
+		report1_type = Report_Type(line)
+		if report1_type ~= "CI324PN" and report1_type ~= "CI324" then
+			iup.Message("Error","Report [Awal] yang dipilih bukan Report \"CI324PN\" atau \"CI324\" dalam format CSV.\nSilahkan download ulang dari BRISIM atau \npilih kembali report yang sesuai.")
+			return -1
+		end
 	else
 		-- process data
 		f = csv.parse(line, sep)
@@ -135,7 +160,11 @@ for line in f_lines1(ReportFileName1) do
 			acc_type_tenor = f[5].." - "..f[14]
 			acc_maturity = f[12]
 			acc_name = f[9]
-			acc_officer = f[16].." - "..f[17]
+			if report1_type == "CI324" then
+				acc_officer = ''
+			else
+				acc_officer = f[16]..' - '..f[17]
+			end
 			acc_balance = string.gsub(string.sub(f[8], 1, #f[8]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			list_acc[acc_no] = {acc_type_tenor, acc_maturity, acc_name, acc_balance, 0, -acc_balance, acc_officer}
@@ -155,6 +184,11 @@ for line in f_lines2(ReportFileName2) do
 	-- only process line begin with number, skipping header
 	if no == 1 then
 		sep = FindFirstSeparator(line)
+		report2_type = Report_Type(line)
+		if report2_type ~= "CI324PN" and report1_type ~= "CI324" then
+			iup.Message("Error","Report [Awal] yang dipilih bukan Report \"CI324PN\" atau \"CI324\" dalam format CSV.\nSilahkan download ulang dari BRISIM atau \npilih kembali report yang sesuai.")
+			return -1
+		end
 	else
 		f = csv.parse(line, sep)
 		if f[1] ~= "" then
@@ -163,7 +197,11 @@ for line in f_lines2(ReportFileName2) do
 			acc_type_tenor = f[5].." - "..f[14]
 			acc_maturity = f[12]
 			acc_name = f[9]
-			acc_officer = f[16].." - "..f[17]
+			if report2_type == "CI324" then
+				acc_officer = ''
+			else
+				acc_officer = f[16]..' - '..f[17]
+			end
 			acc_balance = string.gsub(string.sub(f[8], 1, #f[8]-3), ",", "")
 			acc_balance = tonumber(acc_balance)
 			if list_acc[acc_no] then
