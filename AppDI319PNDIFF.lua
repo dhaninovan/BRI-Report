@@ -26,6 +26,7 @@ local OUTPUT_FILE = "DI319PNDIFF"
 local f_lines1 = nil
 local f_lines2 = nil
 local HEADER_DI319_MULTIPN = "textbox16,textbox8,textbox14,textbox22,textbox15,textbox4,textbox38,textbox6,DLT,textbox2,BALANCE,AVAILBALANCE,INTCREDIT,ACCRUEINT,AVRGBALANCE,textbox11,textbox18,textbox23,KECAMATAN_T_TINGGAL,KELURAHAN_T_TINGGAL,KODEPOS_T_TINGGAL,KECAMATAN_T_USAHA,KELURAHAN_T_USAHA,KODEPOS_T_USAHA,PN_Customer_Service,PN_RM_Dana,PN_RM_Pinjaman,PN_RM_Merchant,PN_Relationship_Officer,PN_Sales_Person,PN_PAB,PN_RM_Referral,JUMLAH_PN"
+local HEADER_DI319_MULTIPN_V2 = "textbox16,textbox8,textbox14,textbox22,textbox15,textbox4,textbox38,DLT,textbox2,BALANCE,AVAILBALANCE,INTCREDIT,ACCRUEINT,AVRGBALANCE,textbox11,KECAMATAN_T_TINGGAL,KELURAHAN_T_TINGGAL,KODEPOS_T_TINGGAL,KECAMATAN_T_USAHA,KELURAHAN_T_USAHA,KODEPOS_T_USAHA,PN_Customer_Service,PN_RM_Dana,PN_RM_Pinjaman,PN_RM_Merchant,PN_Relationship_Officer,PN_Sales_Person,PN_PAB,PN_RM_Referral,JUMLAH_PN"
 local HEADER_DI319_PN = 	 "textbox16,textbox8,textbox14,textbox22,textbox15,textbox4,textbox38,textbox6,DLT,textbox2,BALANCE,AVAILBALANCE,INTCREDIT,ACCRUEINT,AVRGBALANCE,textbox11,textbox18,textbox23,KECAMATAN_T_TINGGAL,KELURAHAN_T_TINGGAL,KODEPOS_T_TINGGAL,KECAMATAN_T_USAHA,KELURAHAN_T_USAHA,KODEPOS_T_USAHA"
 
 function format_account(s)
@@ -107,13 +108,18 @@ function Report_Type(header)
 	header = header:gsub(string.char(0x0A),'')
 	if header == string.char(0xEF, 0xBB, 0xBF)..HEADER_DI319_MULTIPN then
 		return "DI319MULTIPN"
+	elseif header == string.char(0xEF, 0xBB, 0xBF)..HEADER_DI319_MULTIPN_V2 then
+		return "DI319MULTIPN_V2"
 	elseif header == string.char(0xEF, 0xBB, 0xBF)..HEADER_DI319_PN then
 		return "DI319PN"
 	elseif header == HEADER_DI319_MULTIPN then 
 		return "DI319MULTIPN"
+	elseif header == HEADER_DI319_MULTIPN_V2 then 
+		return "DI319MULTIPN_V2"
 	elseif header == HEADER_DI319_PN then
 		return "DI319PN"
 	else
+		print(header)
 		return nil
 	end
 end
@@ -171,7 +177,7 @@ for line in f_lines1(ReportFileName1) do
 	if no == 1 then
 		sep = FindFirstSeparator(line)
 		report1_type = Report_Type(line)
-		if report1_type ~= "DI319PN" and report1_type ~= "DI319MULTIPN" then
+		if report1_type ~= "DI319PN" and report1_type ~= "DI319MULTIPN" and report1_type ~= "DI319MULTIPN_V2" then
 			iup.Message("Error","Report [Awal] yang dipilih bukan Report \"DI319\" PN atau \"DI319 MULTI PN\" dalam format CSV.\nSilahkan download ulang dari BRISIM atau \npilih kembali report yang sesuai.")
 			return -1
 		end
@@ -185,10 +191,16 @@ for line in f_lines1(ReportFileName1) do
 			acc_name = f[7]
 			if report1_type == "DI319MULTIPN" then
 				acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
+			elseif report1_type == "DI319MULTIPN_V2" then
+				acc_officer = Rekap_Officer(f[22],f[23],f[24],f[25],f[26],f[27],f[28],f[29])
 			else
 				acc_officer = f[17]..'-'..f[18]
 			end
-			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
+			if report1_type == "DI319MULTIPN_V2" then
+				acc_balance = string.gsub(string.sub(f[10], 1, #f[10]-3), ",", "")
+			else
+				acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
+			end
 			if (acc_balance ~= nil) then 
 				acc_balance = tonumber(acc_balance)
 				if (acc_balance ~= nil) then 
@@ -216,7 +228,7 @@ for line in f_lines2(ReportFileName2) do
 	if no == 1 then
 		sep = FindFirstSeparator(line)
 		report2_type = Report_Type(line)
-		if report2_type ~= "DI319PN" and report2_type ~= "DI319MULTIPN" then
+		if report2_type ~= "DI319PN" and report2_type ~= "DI319MULTIPN" and report2_type ~= "DI319MULTIPN_V2" then
 			iup.Message("Error","Report [Akhir] yang dipilih bukan Report \"DI319\" PN atau \"DI319 MULTI PN\" dalam format CSV.\\nSilahkan download ulang dari BRISIM atau \\npilih kembali report yang sesuai.")
 			return -1
 		end
@@ -229,10 +241,16 @@ for line in f_lines2(ReportFileName2) do
 			acc_name = f[7]
 			if report2_type == "DI319MULTIPN" then
 				acc_officer = Rekap_Officer(f[25],f[26],f[27],f[28],f[29],f[30],f[31],f[32])
+			elseif report2_type == "DI319MULTIPN_V2" then
+				acc_officer = Rekap_Officer(f[22],f[23],f[24],f[25],f[26],f[27],f[28],f[29])
 			else
 				acc_officer = f[17]..'-'..f[18]
 			end
-			acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
+			if report2_type == "DI319MULTIPN_V2" then
+				acc_balance = string.gsub(string.sub(f[10], 1, #f[10]-3), ",", "")
+			else
+				acc_balance = string.gsub(string.sub(f[11], 1, #f[11]-3), ",", "")
+			end
 			acc_balance = tonumber(acc_balance)
 			if list_acc[acc_no] then
 				list_acc[acc_no][4] = acc_balance
@@ -240,14 +258,25 @@ for line in f_lines2(ReportFileName2) do
 				list_acc[acc_no][6] = acc_officer
 			else
 				list_acc[acc_no] = {acc_cif, acc_name, 0, acc_balance, acc_balance, acc_officer}
-				dd = csv.parse(f[10],'/')
-				fo:write(string.format('%s%s%s%s"%s"%s%s/%s/%s%s"%s"%s%s\n', 
+				if report2_type == "DI319MULTIPN_V2" then
+					dd = csv.parse(f[9],'/')
+					fo:write(string.format('%s%s%s%s"%s"%s%s/%s/%s%s"%s"%s%s\n', 
+					format_account(acc_no), output_sep,
+					f[15], output_sep,
+					acc_name, output_sep,
+					dd[2], dd[1], dd[3], output_sep,
+					format_number(acc_balance), output_sep,
+					acc_officer))
+				else
+					dd = csv.parse(f[10],'/')
+					fo:write(string.format('%s%s%s%s"%s"%s%s/%s/%s%s"%s"%s%s\n', 
 					format_account(acc_no), output_sep,
 					f[16], output_sep,
 					acc_name, output_sep,
 					dd[2], dd[1], dd[3], output_sep,
 					format_number(acc_balance), output_sep,
 					acc_officer))
+				end
 			end
 		end
 	end
@@ -466,5 +495,3 @@ if iup.Alarm("Open List of New Created Account", "Buka file daftar rekening baru
 	os.execute(OUTPUT_FILE.."_NEW.csv")
 end
 --os.execute("pause")
-
-
